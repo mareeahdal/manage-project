@@ -4,25 +4,50 @@ document.addEventListener("DOMContentLoaded", function () {
   const navMenu = document.querySelector(".nav__menu");
   const hamburger = document.querySelector(".nav__hamburger");
 
+  // Function to close menu
+  function closeMenu() {
+    menuToggle.checked = false;
+    navMenu.style.display = "none";
+    document.body.style.overflow = "auto";
+  }
+
+  // Function to open menu
+  function openMenu() {
+    menuToggle.checked = true;
+    navMenu.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
+
   // Toggle mobile menu
   if (menuToggle && navMenu && hamburger) {
     menuToggle.addEventListener("change", function () {
       if (this.checked) {
-        navMenu.style.display = "flex";
-        document.body.style.overflow = "hidden";
+        openMenu();
       } else {
-        navMenu.style.display = "none";
-        document.body.style.overflow = "auto";
+        closeMenu();
       }
     });
 
     // Close menu when clicking on links
     const navLinks = document.querySelectorAll(".nav__link");
     navLinks.forEach((link) => {
-      link.addEventListener("click", () => {
-        menuToggle.checked = false;
-        navMenu.style.display = "none";
-        document.body.style.overflow = "auto";
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeMenu();
+
+        // Get the href and scroll to the section if it exists
+        const href = link.getAttribute("href");
+        if (href && href.startsWith("#")) {
+          const targetElement = document.querySelector(href);
+          if (targetElement) {
+            setTimeout(() => {
+              targetElement.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }, 300); // Wait for menu to close
+          }
+        }
       });
     });
 
@@ -33,9 +58,14 @@ document.addEventListener("DOMContentLoaded", function () {
         !hamburger.contains(e.target) &&
         menuToggle.checked
       ) {
-        menuToggle.checked = false;
-        navMenu.style.display = "none";
-        document.body.style.overflow = "auto";
+        closeMenu();
+      }
+    });
+
+    // Close menu on escape key
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && menuToggle.checked) {
+        closeMenu();
       }
     });
   }
