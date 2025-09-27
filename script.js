@@ -48,6 +48,7 @@ class TestimonialsSlider {
     this.testimonials = document.querySelectorAll(".testimonial");
     this.currentIndex = 0;
     this.isAnimating = false;
+    this.autoSlideInterval = null;
 
     if (this.track && this.testimonials.length > 0) {
       this.init();
@@ -57,25 +58,15 @@ class TestimonialsSlider {
   init() {
     this.setupSlider();
     this.createNavigation();
+    this.createArrows();
     this.startAutoSlide();
+    this.setupTouchEvents();
+    this.pauseOnHover();
   }
 
   setupSlider() {
-    // Clone first and last testimonials for infinite loop
-    const firstClone = this.testimonials[0].cloneNode(true);
-    const lastClone =
-      this.testimonials[this.testimonials.length - 1].cloneNode(true);
-
-    firstClone.classList.add("clone");
-    lastClone.classList.add("clone");
-
-    this.track.appendChild(firstClone);
-    this.track.insertBefore(lastClone, this.testimonials[0]);
-
-    // Update testimonials NodeList
-    this.testimonials = document.querySelectorAll(".testimonial");
-    this.currentIndex = 1; // Start at first real testimonial
-
+    // Set initial position
+    this.track.style.transition = "transform 0.3s ease";
     this.updateSlider();
   }
 
@@ -86,38 +77,88 @@ class TestimonialsSlider {
     // Create navigation dots
     const navContainer = document.createElement("div");
     navContainer.className = "slider__navigation";
-    navContainer.style.cssText = `
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: 2rem;
-    `;
 
-    for (let i = 0; i < this.testimonials.length - 2; i++) {
-      // -2 for clones
+    for (let i = 0; i < this.testimonials.length; i++) {
       const dot = document.createElement("button");
       dot.className = "slider__dot";
       dot.setAttribute("aria-label", `Go to testimonial ${i + 1}`);
-      dot.style.cssText = `
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        border: none;
-        background-color: #ccc;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      `;
 
       if (i === 0) {
-        dot.style.backgroundColor = "#f25f3a";
+        dot.classList.add("active");
       }
 
-      dot.addEventListener("click", () => this.goToSlide(i + 1));
+      dot.addEventListener("click", () => this.goToSlide(i));
       navContainer.appendChild(dot);
     }
 
     sliderContainer.appendChild(navContainer);
     this.dots = navContainer.querySelectorAll(".slider__dot");
+  }
+
+  createArrows() {
+    const sliderContainer = document.querySelector(".testimonials__slider");
+    if (!sliderContainer) return;
+
+    // Create previous arrow
+    const prevArrow = document.createElement("button");
+    prevArrow.className = "slider__arrow slider__arrow--prev";
+    prevArrow.setAttribute("aria-label", "Previous testimonial");
+    prevArrow.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    `;
+    prevArrow.addEventListener("click", () => this.prevSlide());
+
+    // Create next arrow
+    const nextArrow = document.createElement("button");
+    nextArrow.className = "slider__arrow slider__arrow--next";
+    nextArrow.setAttribute("aria-label", "Next testimonial");
+    nextArrow.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    `;
+    nextArrow.addEventListener("click", () => this.nextSlide());
+
+    sliderContainer.appendChild(prevArrow);
+    sliderContainer.appendChild(nextArrow);
+  }
+
+  setupTouchEvents() {
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+
+    this.track.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      isDragging = true;
+    });
+
+    this.track.addEventListener("touchmove", (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+    });
+
+    this.track.addEventListener("touchend", (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const diffX = startX - endX;
+      const diffY = startY - endY;
+
+      // Only trigger swipe if horizontal movement is greater than vertical
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+        if (diffX > 0) {
+          this.nextSlide();
+        } else {
+          this.prevSlide();
+        }
+      }
+    });
   }
 
   updateSlider() {
@@ -129,46 +170,31 @@ class TestimonialsSlider {
 
     this.track.style.transform = `translateX(${translateX}px)`;
 
-    // Handle infinite loop
-    setTimeout(() => {
-      if (this.currentIndex === 0) {
-        this.track.style.transition = "none";
-        this.track.style.transform = `translateX(-${
-          (this.testimonials.length - 2) * slideWidth
-        }px)`;
-        this.currentIndex = this.testimonials.length - 2;
-        setTimeout(() => {
-          this.track.style.transition = "transform 0.3s ease";
-        }, 50);
-      } else if (this.currentIndex === this.testimonials.length - 1) {
-        this.track.style.transition = "none";
-        this.track.style.transform = `translateX(-${slideWidth}px)`;
-        this.currentIndex = 1;
-        setTimeout(() => {
-          this.track.style.transition = "transform 0.3s ease";
-        }, 50);
-      }
+    this.updateDots();
 
-      this.updateDots();
+    setTimeout(() => {
       this.isAnimating = false;
     }, 300);
   }
 
   goToSlide(index) {
-    if (this.isAnimating) return;
+    if (this.isAnimating || index === this.currentIndex) return;
     this.currentIndex = index;
     this.updateSlider();
   }
 
   nextSlide() {
     if (this.isAnimating) return;
-    this.currentIndex++;
+    this.currentIndex = (this.currentIndex + 1) % this.testimonials.length;
     this.updateSlider();
   }
 
   prevSlide() {
     if (this.isAnimating) return;
-    this.currentIndex--;
+    this.currentIndex =
+      this.currentIndex === 0
+        ? this.testimonials.length - 1
+        : this.currentIndex - 1;
     this.updateSlider();
   }
 
@@ -176,19 +202,34 @@ class TestimonialsSlider {
     if (!this.dots) return;
 
     this.dots.forEach((dot, index) => {
-      const realIndex = this.currentIndex - 1;
-      if (index === realIndex) {
-        dot.style.backgroundColor = "#f25f3a";
+      if (index === this.currentIndex) {
+        dot.classList.add("active");
       } else {
-        dot.style.backgroundColor = "#ccc";
+        dot.classList.remove("active");
       }
     });
   }
 
   startAutoSlide() {
-    setInterval(() => {
+    this.autoSlideInterval = setInterval(() => {
       this.nextSlide();
     }, 5000); // Auto-advance every 5 seconds
+  }
+
+  stopAutoSlide() {
+    if (this.autoSlideInterval) {
+      clearInterval(this.autoSlideInterval);
+      this.autoSlideInterval = null;
+    }
+  }
+
+  // Pause auto-slide on hover
+  pauseOnHover() {
+    const slider = document.querySelector(".testimonials__slider");
+    if (slider) {
+      slider.addEventListener("mouseenter", () => this.stopAutoSlide());
+      slider.addEventListener("mouseleave", () => this.startAutoSlide());
+    }
   }
 }
 
