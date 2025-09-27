@@ -194,7 +194,7 @@
             </div>
           </div>
 
-          <div class="footer__links">
+          <nav class="footer__links" aria-label="Footer navigation">
             <ul class="footer__list">
               <li><a href="#" class="footer__link">Home</a></li>
               <li><a href="#" class="footer__link">Pricing</a></li>
@@ -206,22 +206,35 @@
               <li><a href="#" class="footer__link">Community</a></li>
               <li><a href="#" class="footer__link">Privacy Policy</a></li>
             </ul>
-          </div>
+          </nav>
 
           <div class="footer__newsletter">
-            <form class="newsletter__form" id="newsletter-form">
-              <input
-                type="email"
-                placeholder="Updates in your inbox..."
-                class="newsletter__input"
-                id="newsletter-email"
-                required
-              />
-              <button type="submit" class="btn btn--primary newsletter__button">
-                Go
-              </button>
+            <form class="newsletter__form" id="newsletter-form" novalidate>
+              <div class="newsletter__input-group">
+                <input
+                  type="email"
+                  placeholder="Updates in your inbox..."
+                  class="newsletter__input"
+                  id="newsletter-email"
+                  name="email"
+                  required
+                  aria-describedby="newsletter-error"
+                />
+                <button
+                  type="submit"
+                  class="btn btn--primary newsletter__button"
+                  aria-label="Subscribe to newsletter"
+                >
+                  Go
+                </button>
+              </div>
+              <p
+                class="newsletter__error"
+                id="newsletter-error"
+                role="alert"
+                aria-live="polite"
+              ></p>
             </form>
-            <p class="newsletter__error" id="newsletter-error"></p>
           </div>
         </div>
 
